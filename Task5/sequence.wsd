@@ -1,0 +1,65 @@
+@startuml
+
+!$background_color_1 = FFFFFF80
+!$background_color_2 = ffffff
+!$background_color_3 = e9e9e9
+!$background_color_4 = d3d3d3
+!$background_color_5 = bdbebd
+!$background_color_6 = a9a9a9
+!$background_color_7 = 949494
+!$background_color_8 = 808080
+
+skinparam BoxPadding 20
+skinparam SequenceGroupFontColor #Maroon
+skinparam sequenceReferenceBackgroundColor #Yellow
+skinparam sequenceReferenceHeaderBackgroundColor #LightBlue
+' skinparam SequenceDividerFontColor #BlueViolet
+skinparam SequenceDividerBackgroundColor #Wheat
+
+
+actor "Оператор" as User
+participant MES_UI
+participant MES_API
+participant Redis
+participant DB
+
+|||
+
+autonumber 1
+
+== Изменение статуса заказа ==
+User -> MES_UI: изменяет статус заказа
+    MES_UI -> MES_API: запрос на изменение статуса заказа
+        MES_API -> Redis: запрос на изменение/сохранение данных в кеше
+        MES_API <-- Redis: ok
+
+        MES_API -> DB: запрос на запись
+        MES_API <-- DB: ok
+
+    MES_UI <-- MES_API: ok
+User <-- MES_UI: ok
+
+autonumber 1
+
+== Получение списка заказов ==
+
+User -> MES_UI: открывает список заказов
+    MES_UI -> MES_API: запрос на получение списка заказов
+        MES_API -> Redis: получение данных из кеша
+        MES_API <-- Redis: ответ
+        
+        alt #$background_color_3 Если данные в кеше ЕСТЬ
+            MES_UI <-- MES_API: ответ из кеша
+            User <-- MES_UI: ответ
+        else Если данных в кеше НЕТ
+            MES_API -> DB: запрос на чтение
+            MES_API <-- DB: ответ
+
+            MES_API -> Redis: запись в кеш
+            MES_API <-- Redis: ok
+
+            MES_UI <-- MES_API: ответ из кеша
+            User <-- MES_UI: ответ
+        end
+
+@enduml
